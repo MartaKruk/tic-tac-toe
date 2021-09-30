@@ -1,0 +1,14 @@
+.radio-button .radio {
+    -fx-border-width: 2px;
+    -fx-border-color: rgb(39, 142, 59);
+    -fx-background-color: transparent;
+    -fx-border-radius: 10px;
+    -fx-padding: 0px;
+}
+.radio-button .dot {
+    -fx-background-radius: 10px;
+    -fx-padding: 4px;
+}
+.radio-button:selected .radio .dot {
+    -fx-background-color: rgb(39, 142, 59);
+}
