@@ -25,6 +25,8 @@ public class TicTacToe extends Application {
     private final Image imageback = new Image("file:src/main/resources/bckggreen.jpg");
     private final Image circle = new Image("file:src/main/resources/circle_green.png");
     private final Image cross = new Image("file:src/main/resources/cross_green.png");
+    private final Image icon = new Image("file:src/main/resources/icon.png");
+    private final Image logo = new Image("file:src/main/resources/logo_mini_mini.png");
     private final ImageView board = new ImageView("file:src/main/resources/kratka_green.png");
 
     private final List<Button> buttons = new LinkedList<>();
@@ -34,10 +36,10 @@ public class TicTacToe extends Application {
     private final List<Line> lines = new LinkedList<>();
 
     private boolean isTurnX = true;
-    private int difficulty = 1;
     private int computerScore = 0;
     private int playerScore = 0;
     private final Random random = new Random();
+    private int difficulty = 1;
     private String username;
 
     private final Label label = new Label();
@@ -45,15 +47,19 @@ public class TicTacToe extends Application {
     private final Label resultList = new Label();
     private final Label scoreBoard = new Label();
     private final Label chooseDifficulty = new Label("Choose\ndifficulty:");
+
     private final Button newGame = new Button("NEW GAME");
     private final Button saveGame = new Button("SAVE GAME");
-    private final Button resetScore = new Button("RESTART GAME");
+    private final Button resetScore = new Button("RESET GAME");
+
     private final RadioButton easy = new RadioButton("Easy");
     private final RadioButton hard = new RadioButton("Hard");
     private final RadioButton impossible = new RadioButton("Impossible");
+
     private final ToggleGroup toggleDifficulty = new ToggleGroup();
     private final VBox sideButtonBar = new VBox();
     private final HBox topButtonBar = new HBox();
+
     private final GridPane grid = new GridPane();
     private final Pane pane = new Pane();
 
@@ -67,10 +73,9 @@ public class TicTacToe extends Application {
     private int lastPlayerMove;
     private int computerMove;
     private final int[] winningLine = new int[3];
+    private final String[] savedBoard = new String[9];
 
     private final TextInputDialog dialog = new TextInputDialog();
-    private final File ranking = new File("ranking.list");
-    private final Map<String, String> resultMap = new HashMap<>();
 
     private final Line line048 = new Line(5.0f, 5.0f, 385.0f, 385.0f);
     private final Line line246 = new Line(5.0f, 385.0f, 385.0f, 5.0f);
@@ -82,7 +87,7 @@ public class TicTacToe extends Application {
     private final Line line258 = new Line(325.0f, 5.0f, 325.0f, 385.0f);
 
     public boolean checkForThree(int index1, int index2, int index3) {
-        if (buttons.get(index1).isDisabled() && buttons.get(index2).isDisabled() && buttons.get(index3).isDisabled() && (buttons.get(index1).getId()).equals(buttons.get(index2).getId()) && buttons.get(index1).getId().equals(buttons.get(index3).getId())) {
+        if(buttons.get(index1).isDisabled() && buttons.get(index2).isDisabled() && buttons.get(index3).isDisabled() && (buttons.get(index1).getId()).equals(buttons.get(index2).getId()) && buttons.get(index1).getId().equals(buttons.get(index3).getId())) {
             winningLine[0] = index1;
             winningLine[1] = index2;
             winningLine[2] = index3;
@@ -93,10 +98,10 @@ public class TicTacToe extends Application {
     }
 
     public boolean checkForTwo(int index1, int index2, int index3) {
-        if ((buttons.get(index1).getId()).equals(buttons.get(index2).getId()) && !buttons.get(index3).isDisabled()) {
+        if((buttons.get(index1).getId()).equals(buttons.get(index2).getId()) && !buttons.get(index3).isDisabled()) {
             computerMove = index3;
             return true;
-        } else if (buttons.get(index1).getId().equals(buttons.get(index3).getId()) && !buttons.get(index2).isDisabled()) {
+        } else if(buttons.get(index1).getId().equals(buttons.get(index3).getId()) && !buttons.get(index2).isDisabled()) {
             computerMove = index2;
             return true;
         } else {
@@ -105,7 +110,7 @@ public class TicTacToe extends Application {
     }
 
     public boolean isThreeInARow() {
-        if (emptyButtons.size()<5) {
+        if(emptyButtons.size()<5) {
             switch(lastMove) {
                 case 0:
                     return (checkForThree(0,1,2) || checkForThree(0,3,6) || checkForThree(0,4,8));
@@ -134,8 +139,8 @@ public class TicTacToe extends Application {
     }
 
     public boolean isTwoInARow(int move) {
-        if (emptyButtons.size()<7) {
-            switch (move) {
+        if(emptyButtons.size()<7) {
+            switch(move) {
                 case 0:
                     return checkForTwo(0,1,2) || checkForTwo(0,3,6) || checkForTwo(0,4,8);
                 case 1:
@@ -160,108 +165,72 @@ public class TicTacToe extends Application {
         } return false;
     }
 
-    public void computerTurnEasy() {
-        if (!isTwoInARow(lastComputerMove)) {
-            int bound = emptyButtons.size();
-            int n = random.nextInt(bound);
-            computerMove = emptyButtons.get(n);
-        }
+    public void randomMove() {
+        int bound = emptyButtons.size();
+        int n = random.nextInt(bound);
+        computerMove = emptyButtons.get(n);
         buttons.get(computerMove).fire();
     }
 
-    public void computerTurnImpossible() {
-        if (isTwoInARow(lastComputerMove)) { //win if possible
-            buttons.get(computerMove).fire();
-        } else if (isTwoInARow(lastPlayerMove)) { //block opponent
-            buttons.get(computerMove).fire();
-        } else if (!buttons.get(4).isDisabled()) { //middle
-            buttons.get(4).fire();
-        } else if (X.equals(buttons.get(0).getId()) && X.equals(buttons.get(8).getId())) { //block opponent's fork
-            buttons.get(1).fire();
-        } else if (X.equals(buttons.get(2).getId()) && X.equals(buttons.get(6).getId())) {
-            buttons.get(1).fire();
-        } else if (X.equals(buttons.get(0).getId()) && !buttons.get(8).isDisabled()) { //opposite corner
-            buttons.get(8).fire();
-        } else if (X.equals(buttons.get(2).getId()) && !buttons.get(6).isDisabled()) {
+    public void computerTurn(int difficulty) {
+        if (difficulty == 2 || difficulty == 3) {
+            if (isTwoInARow(lastComputerMove)) { //win if possible
+                buttons.get(computerMove).fire();
+            } else if (isTwoInARow(lastPlayerMove)) { //block opponent
+                buttons.get(computerMove).fire();
+            } else if (!buttons.get(4).isDisabled()) { //middle
+                buttons.get(4).fire();
+            } else if (X.equals(buttons.get(0).getId()) && X.equals(buttons.get(8).getId()) && difficulty == 3) { //block opponent's fork
+                buttons.get(1).fire();
+            } else if (X.equals(buttons.get(2).getId()) && X.equals(buttons.get(6).getId()) && difficulty == 3) {
+                buttons.get(1).fire();
+            } else if (X.equals(buttons.get(0).getId()) && !buttons.get(8).isDisabled()) { //opposite corner
+                buttons.get(8).fire();
+            } else if (X.equals(buttons.get(2).getId()) && !buttons.get(6).isDisabled()) {
                 buttons.get(6).fire();
-        } else if (X.equals(buttons.get(6).getId()) && !buttons.get(2).isDisabled()) {
-            buttons.get(2).fire();
-        } else if (X.equals(buttons.get(8).getId()) && !buttons.get(0).isDisabled()) {
-            buttons.get(0).fire();
-        } else if (!buttons.get(0).isDisabled()) { //any corner
-            buttons.get(0).fire();
-        } else if (!buttons.get(2).isDisabled()) {
-            buttons.get(2).fire();
-        } else if (!buttons.get(6).isDisabled()) {
-            buttons.get(6).fire();
-        } else if (!buttons.get(8).isDisabled()) {
-            buttons.get(8).fire();
-        } else if (!buttons.get(1).isDisabled()) { //any side middle
-            buttons.get(1).fire();
-        } else if (!buttons.get(3).isDisabled()) {
-            buttons.get(3).fire();
-        } else if (!buttons.get(5).isDisabled()) {
-            buttons.get(5).fire();
-        } else if (!buttons.get(7).isDisabled()) {
-            buttons.get(7).fire();
+            } else if (X.equals(buttons.get(6).getId()) && !buttons.get(2).isDisabled()) {
+                buttons.get(2).fire();
+            } else if (X.equals(buttons.get(8).getId()) && !buttons.get(0).isDisabled()) {
+                buttons.get(0).fire();
+            } else if (!buttons.get(0).isDisabled()) { //any corner
+                buttons.get(0).fire();
+            } else if (!buttons.get(2).isDisabled()) {
+                buttons.get(2).fire();
+            } else if (!buttons.get(6).isDisabled()) {
+                buttons.get(6).fire();
+            } else if (!buttons.get(8).isDisabled()) {
+                buttons.get(8).fire();
+            } else if (!buttons.get(1).isDisabled()) { //any side middle
+                buttons.get(1).fire();
+            } else if (!buttons.get(3).isDisabled()) {
+                buttons.get(3).fire();
+            } else if (!buttons.get(5).isDisabled()) {
+                buttons.get(5).fire();
+            } else if (!buttons.get(7).isDisabled()) {
+                buttons.get(7).fire();
+            } else {
+                randomMove();
+            }
         } else {
-            int bound = emptyButtons.size();
-            int n = random.nextInt(bound);
-            computerMove = emptyButtons.get(n);
+            if (!isTwoInARow(lastComputerMove)) {
+                randomMove();
+            }
             buttons.get(computerMove).fire();
         }
-    }
-
-    public void computerTurnHard() {
-        if (isTwoInARow(lastComputerMove)) {
-            buttons.get(computerMove).fire();
-        } else if (isTwoInARow(lastPlayerMove)) {
-            buttons.get(computerMove).fire();
-        } else if (!buttons.get(4).isDisabled()) {
-            buttons.get(4).fire();
-        } else if (X.equals(buttons.get(0).getId()) && !buttons.get(8).isDisabled()) {
-            buttons.get(8).fire();
-        } else if (X.equals(buttons.get(2).getId()) && !buttons.get(6).isDisabled()) {
-            buttons.get(6).fire();
-        } else if (X.equals(buttons.get(6).getId()) && !buttons.get(2).isDisabled()) {
-            buttons.get(2).fire();
-        } else if (X.equals(buttons.get(8).getId()) && !buttons.get(0).isDisabled()) {
-            buttons.get(0).fire();
-        } else if (!buttons.get(0).isDisabled()) {
-            buttons.get(0).fire();
-        } else if (!buttons.get(2).isDisabled()) {
-            buttons.get(2).fire();
-        } else if (!buttons.get(6).isDisabled()) {
-            buttons.get(6).fire();
-        } else if (!buttons.get(8).isDisabled()) {
-            buttons.get(8).fire();
-        } else if (!buttons.get(1).isDisabled()) {
-            buttons.get(1).fire();
-        } else if (!buttons.get(3).isDisabled()) {
-            buttons.get(3).fire();
-        } else if (!buttons.get(5).isDisabled()) {
-            buttons.get(5).fire();
-        } else if (!buttons.get(7).isDisabled()) {
-            buttons.get(7).fire();
-        } else {
-            int bound = emptyButtons.size();
-            int n = random.nextInt(bound);
-            computerMove = emptyButtons.get(n);
-            buttons.get(computerMove).fire();}
     }
 
     public boolean isBoardFull() {
         return emptyButtons.isEmpty();
     }
 
-    public void fadeLine (Line line) {
+    public void fadeLine(Line line) {
         FadeTransition fadeTransitionLine = new FadeTransition(Duration.millis(500), line);
         fadeTransitionLine.setFromValue(0.0);
         fadeTransitionLine.setToValue(0.9);
         fadeTransitionLine.play();
     }
 
-    public void fadeButton (Button button) {
+    public void fadeButton(Button button) {
         FadeTransition fadeTransitionButton = new FadeTransition(Duration.millis(500), button);
         fadeTransitionButton.setFromValue(0.0);
         fadeTransitionButton.setToValue(0.7);
@@ -269,32 +238,32 @@ public class TicTacToe extends Application {
     }
 
     public void drawLine(int @NotNull ... table) {
-        if (table[0] == 0) {
-            if (table[1] == 1) {
+        if(table[0] == 0) {
+            if(table[1] == 1) {
                 pane.getChildren().add(line012);
                 fadeLine(line012);
-            } else if (table[1] == 3) {
+            } else if(table[1] == 3) {
                 pane.getChildren().add(line036);
                 fadeLine(line036);
-            } else if (table[1] == 4) {
+            } else if(table[1] == 4) {
                 pane.getChildren().add(line048);
                 fadeLine(line048);
             }
-        } else if (table[0] == 1) {
+        } else if(table[0] == 1) {
             pane.getChildren().add(line147);
             fadeLine(line147);
-        } else if (table[0] == 2) {
+        } else if(table[0] == 2) {
             if (table[1] == 5) {
                 pane.getChildren().add(line258);
                 fadeLine(line258);
-            } else if (table[1] == 4) {
+            } else if(table[1] == 4) {
                 pane.getChildren().add(line246);
                 fadeLine(line246);
             }
-        } else if (table[0] == 3) {
+        } else if(table[0] == 3) {
             pane.getChildren().add(line345);
             fadeLine(line345);
-        } else {
+        } else if(table[0] == 6){
             pane.getChildren().add(line678);
             fadeLine(line678);
         }
@@ -302,8 +271,7 @@ public class TicTacToe extends Application {
 
     public void setEmptyButtons() {
         for(int i=0; i<9; i++) {
-            Integer temp = i;
-            emptyButtons.add(temp);
+            emptyButtons.add(i);
         }
     }
 
@@ -314,34 +282,178 @@ public class TicTacToe extends Application {
     }
 
     public void welcomeDialog() {
-        Optional<String> result = dialog.showAndWait();
-        result.ifPresent(name -> username = name);
+            Optional<String> result = dialog.showAndWait();
+            result.ifPresent(name -> username = name);
 
-        if (username != null) {
+            if (username != null) {
+                hello.setText("Hello " + username + "!");
+            } else {
+                hello.setText("Hello!");
+            }
+    }
+
+    public void loadData() {
+        try {
+            BufferedReader br = new BufferedReader(new FileReader("src/main/resources/output.txt"));
+
+            for (int i=0; i<9; i++) {
+                savedBoard[i] = br.readLine();
+            }
+            difficulty = Integer.parseInt(br.readLine());
+            computerScore = Integer.parseInt(br.readLine());
+            playerScore = Integer.parseInt(br.readLine());
+            lastComputerMove = Integer.parseInt(br.readLine());
+            lastPlayerMove = Integer.parseInt(br.readLine());
+            lastMove = Integer.parseInt(br.readLine());
+            username = br.readLine();
+            br.close();
+        } catch(Exception e) {
+            System.out.println("Reader error " + e);
+        }
+    }
+
+    public void newGame() {
+        for(Button button:buttons) {
+            button.setGraphic(null);
+            button.setDisable(false);
+            button.setId("");
+        }
+        pane.getChildren().removeAll(lines);
+        emptyButtons.clear();
+        setEmptyButtons();
+        isTurnX = true;
+        label.setText("");
+    }
+
+    public void resetGame() {
+        Optional<String> result = dialog.showAndWait();
+        if(result.isPresent()) {
+            username = result.get();
+            hello.setText("Hello " + username + "!");
+            computerScore = playerScore = 0;
+            updateScoreBoard();
+            newGame.fire();
+            try {
+                PrintWriter pw = new PrintWriter("src/main/resources/output.txt");
+                pw.close();
+            } catch(Exception e) {
+                System.out.println("Error " + e);
+            }
+        }
+    }
+
+    public void updateScoreBoard() {
+        scoreBoard.setText("SCORE:\n\nComputer: " + computerScore + "\nPlayer: " + playerScore);
+    }
+
+    public void gameplayX(Button button) {
+        button.setGraphic(new ImageView(cross));
+        button.setId(X);
+        lastMove = lastPlayerMove = buttons.indexOf(button);
+        emptyButtons.remove((Integer) lastMove);
+        button.setDisable(true);
+        if (isThreeInARow()) {
+            label.setText(WIN);
+            playerScore++;
+            updateScoreBoard();
+            drawLine(winningLine);
+            disableBoard();
+        } else {
+            if (isBoardFull()) {
+                label.setText("It's a draw!");
+                disableBoard();
+            } else {
+                isTurnX = !isTurnX;
+                computerTurn(difficulty);
+            }
+        }
+    }
+
+    public void gameplayO(Button button) {
+        fadeButton(button);
+        button.setGraphic(new ImageView(circle));
+        button.setId(O);
+        lastMove = lastComputerMove = buttons.indexOf(button);
+        emptyButtons.remove((Integer) lastMove);
+        button.setDisable(true);
+        if (isThreeInARow()) {
+            label.setText(LOSE);
+            computerScore++;
+            updateScoreBoard();
+            drawLine(winningLine);
+            disableBoard();
+        } else {
+            isTurnX = !isTurnX;
+        }
+    }
+
+    public void saveGame() {
+        try {
+            BufferedWriter bw = new BufferedWriter(new FileWriter("src/main/resources/output.txt"));
+
+            for(Button button:buttons) {
+                bw.write(button.getId());
+                bw.newLine();
+            }
+            bw.write(difficulty + "");
+            bw.newLine();
+            bw.write(computerScore + "");
+            bw.newLine();
+            bw.write(playerScore + "");
+            bw.newLine();
+            bw.write(lastComputerMove + "");
+            bw.newLine();
+            bw.write(lastPlayerMove + "");
+            bw.newLine();
+            bw.write(lastMove + "");
+            bw.newLine();
+            bw.write(username);
+            bw.close();
+        } catch(Exception e) {
+            System.out.println("Writer error " + e + "\nUnable to save the game.");
+        }
+    }
+
+    public void loadSavedGame(String[] savedBoard) {
+        updateScoreBoard();
+        int i = 0;
+        for (Button button:buttons) {
+            if(savedBoard[i].equals("x")) {
+                button.setGraphic(new ImageView(cross));
+                button.setId(X);
+                button.setDisable(true);
+                i++;
+            } else if(savedBoard[i].equals("o")) {
+                button.setGraphic(new ImageView(circle));
+                button.setId(O);
+                button.setDisable(true);
+                i++;
+            } else {
+                emptyButtons.add(i);
+                i++;
+            }
+
+        }
+
+        if(username != null) {
             hello.setText("Hello " + username + "!");
         } else {
             hello.setText("Hello!");
         }
-    }
 
-    public void saveResult() {
-        try {
-            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ranking));
-            oos.writeObject(resultMap);
-            oos.close();
-        } catch (Exception e) {
-            System.out.println("wystąpił błąd: " + e);
+        switch(difficulty) {
+            case 1:
+                easy.setSelected(true);
+                break;
+            case 2:
+                hard.setSelected(true);
+                break;
+            case 3:
+                impossible.setSelected(true);
         }
-    }
 
-    public void loadResult() {
-        try {
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ranking));
-            Map<String,String> readMap = (HashMap<String,String>) ois.readObject();
-                resultMap.putAll(readMap);
-            ois.close();
-        } catch (Exception e) {
-            System.out.println("wystąpił błąd: " + e);
+        if(isThreeInARow()) {
+            drawLine(winningLine);
         }
     }
 
@@ -361,18 +473,17 @@ public class TicTacToe extends Application {
 
         hello.setTextFill(Color.rgb(190, 200, 77, 1.0));
         hello.setFont(new Font("Arial Rounded MT Bold", 22));
-        hello.setPadding(new Insets(10.0, 10.0, 10.0, 10.0));
+        hello.setPadding(new Insets(10.0, 10.0, 25.0, 10.0));
 
         scoreBoard.setTextFill(Color.WHITE);
         scoreBoard.setFont(new Font("Arial Rounded MT Bold", 18));
-        scoreBoard.setText("SCORE:\n\nComputer: " + computerScore + "\nPlayer: " + playerScore);
         scoreBoard.setPadding(new Insets(0.0, 15.0, 15.0, 20.0));
 
         chooseDifficulty.setTextFill(Color.WHITE);
         chooseDifficulty.setFont(new Font("Arial Rounded MT Bold", 18));
         chooseDifficulty.setPadding(new Insets(0.0, 5.0, 50.0, 20.0));
 
-        for (Button controlButton:controlButtons) {
+        for(Button controlButton:controlButtons) {
             controlButton.setTextFill(Color.WHITE);
             controlButton.setBackground(null);
             controlButton.setOnMouseEntered(event -> {
@@ -388,36 +499,13 @@ public class TicTacToe extends Application {
             HBox.setMargin(controlButton, new Insets(5.0, 5.0, 5.0, 10.0));
         }
 
-        newGame.setOnAction(event -> {
-            for (Button button:buttons) {
-                button.setGraphic(null);
-                button.setDisable(false);
-                button.setId("");
-            }
-            pane.getChildren().removeAll(lines);
-            emptyButtons.clear();
-            setEmptyButtons();
-            isTurnX = true;
-            label.setText("");
-        });
-
-        resetScore.setOnAction(event -> {
-            Optional<String> result = dialog.showAndWait();
-            if (result.isPresent()) {
-                username = result.get();
-                hello.setText("Hello " + username + "!");
-                computerScore = 0;
-                playerScore = 0;
-                scoreBoard.setText("SCORE:\n\nComputer: " + computerScore + "\nPlayer: " + playerScore);
-                resultMap.put(username + " vs. Computer", playerScore + ":" + computerScore);
-                saveResult();
-                newGame.fire();
-            }
-        });
+        newGame.setOnAction(event -> newGame());
+        resetScore.setOnAction(event -> resetGame());
+        saveGame.setOnAction(event -> saveGame());
 
         board.setOpacity(0.5);
 
-        for (RadioButton radioButton:difficultyButtons) {
+        for(RadioButton radioButton:difficultyButtons) {
             radioButton.setToggleGroup(toggleDifficulty);
             radioButton.setBackground(null);
             radioButton.setTextFill(Color.WHITE);
@@ -430,7 +518,7 @@ public class TicTacToe extends Application {
         hard.setOnMouseClicked(event -> difficulty = 2);
         impossible.setOnMouseClicked(event -> difficulty = 3);
 
-        easy.setSelected(true);
+        //easy.setSelected(true);
 
         sideButtonBar.getChildren().addAll(difficultyButtons);
         sideButtonBar.setPadding(new Insets(0.0, 0.0, 0.0, 20.0));
@@ -438,13 +526,11 @@ public class TicTacToe extends Application {
         topButtonBar.getChildren().addAll(controlButtons);
         topButtonBar.setPadding(new Insets(20.0, 5.0, 5.0, 5.0));
 
-        loadResult();
-
         grid.setAlignment(Pos.TOP_CENTER);
         grid.setGridLinesVisible(false);
         grid.setBackground(background);
-        //grid.setPadding(new Insets(60.0, 0.0, 0.0, 0.0));
         grid.setAlignment(Pos.CENTER);
+        grid.getStylesheets().add("radio-button.css");
         grid.add(pane, 0, 1, 3, 3);
         grid.add(board, 0,1,3,3);
         grid.add(label, 3, 1, 1, 1);
@@ -454,77 +540,33 @@ public class TicTacToe extends Application {
         grid.add(sideButtonBar, 3,2, 1, 2);
         grid.add(topButtonBar,0,4, 4, 1);
         grid.add(resultList, 0, 5, 4, 1);
-        grid.getStylesheets().add("radio-button.css");
 
-        setEmptyButtons();
+        dialog.setTitle("Tic-Tac-Toe");
+        dialog.setGraphic(new ImageView(logo));
+        dialog.setContentText("Please enter your name:");
+        dialog.setHeaderText("");
 
-        for (Line line:lines) {
+        for(Line line:lines) {
             line.setStroke(Color.WHITESMOKE);
             line.setStrokeWidth(5.0);
             line.setOpacity(0.8);
             line.setStrokeLineCap(StrokeLineCap.ROUND);
         }
 
-        for (int i = 1; i < 4; i++) {
-            for (int j = 0; j < 3; j++) {
+        for(int i = 1; i < 4; i++) {
+            for(int j = 0; j < 3; j++) {
                 Button button = new Button();
                 button.setBackground(null);
+                button.setId("");
                 button.setOpacity(0.7);
                 button.setPrefSize(130.0, 130.0);
-
-                FadeTransition fadeButton = new FadeTransition(Duration.millis(500), button);
-                fadeButton.setFromValue(0.0);
-                fadeButton.setToValue(0.7);
-
                 button.setOnAction(event -> {
                     if (isTurnX) {
-                        button.setGraphic(new ImageView(cross));
-                        button.setId(X);
-                        lastMove = lastPlayerMove = buttons.indexOf(button);
-                        emptyButtons.remove((Integer) lastMove);
-                        button.setDisable(true);
-                        if (isThreeInARow()) {
-                            label.setText(WIN);
-                            playerScore++;
-                            scoreBoard.setText("SCORE:\n\nComputer: " + computerScore + "\nPlayer: " + playerScore);
-                            drawLine(winningLine);
-                            for (Button button1:buttons) {
-                                button1.setDisable(true);
-                            }
-                        } else {
-                            if (isBoardFull()) {
-                                label.setText("It's a draw!");
-                                disableBoard();
-                            } else {
-                                isTurnX = !isTurnX;
-                                if (difficulty == 1) {
-                                    computerTurnEasy();
-                                } else if (difficulty == 2) {
-                                    computerTurnHard();
-                                } else {
-                                    computerTurnImpossible();
-                                }
-                            }
-                        }
+                        gameplayX(button);
                     } else {
-                        fadeButton(button);
-                        button.setGraphic(new ImageView(circle));
-                        button.setId(O);
-                        lastMove = lastComputerMove = buttons.indexOf(button);
-                        emptyButtons.remove((Integer) lastMove);
-                        button.setDisable(true);
-                        if (isThreeInARow()) {
-                            label.setText(LOSE);
-                            computerScore++;
-                            scoreBoard.setText("SCORE:\n\nComputer: " + computerScore + "\nPlayer: " + playerScore);
-                            drawLine(winningLine);
-                            disableBoard();
-                        } else {
-                            isTurnX = !isTurnX;
-                        }
+                        gameplayO(button);
                     }
                 });
-
                 buttons.add(button);
                 grid.add(button, j, i);
             }
@@ -532,17 +574,24 @@ public class TicTacToe extends Application {
 
         Scene scene = new Scene(grid, 640, 720, Color.GREEN);
 
-        dialog.setTitle("Tic-Tac-Toe");
-        dialog.setGraphic(new ImageView("file:src/main/resources/logo_mini_mini.png"));
-        dialog.setContentText("Please enter your name:");
-        dialog.setHeaderText("");
+        Stage dialogStage = (Stage) dialog.getDialogPane().getScene().getWindow();
+        dialogStage.getIcons().add(icon);
 
-        welcomeDialog();
+        File file = new File("src/main/resources/output.txt");
+
+        if(file.length()==0) {
+            setEmptyButtons();
+            updateScoreBoard();
+            welcomeDialog();
+        } else {
+            loadData();
+            loadSavedGame(savedBoard);
+        }
 
         primaryStage.setTitle("Tic-Tac-Toe");
+        primaryStage.getIcons().add(icon);
         primaryStage.setScene(scene);
         primaryStage.show();
-
     }
 
     public static void main(String[] args) {
